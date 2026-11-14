@@ -1,5 +1,7 @@
 package com.example.data.model
 
+import com.example.BuildConfig
+
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.IgnoreExtraProperties
@@ -121,6 +123,16 @@ object VideoProviderRegistry {
             supportsImageToVideo = true,
             supportsTextToVideo = true,
             description = "Modular adapter slot for third-party video APIs. Queues render payloads without activating billing."
+        ),
+        VideoProviderSpec(
+            id = "gemini_omni_adapter",
+            displayName = "Gemini Omni Flash (Direct)",
+            modelLabel = "gemini-omni-1.1-flash",
+            billingTier = "paid",
+            isConnected = BuildConfig.GEMINI_API_KEY.isNotBlank(),
+            supportsImageToVideo = true,
+            supportsTextToVideo = true,
+            description = "Renders a real MP4 on this device's request through the Gemini API. Billed by Google per clip; only runs when you press the render button. Needs GEMINI_API_KEY in .env."
         )
     )
 }

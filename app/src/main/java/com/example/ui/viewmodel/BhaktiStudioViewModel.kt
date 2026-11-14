@@ -446,7 +446,9 @@ class BhaktiStudioViewModel(
             return
         }
         val status = if (provider.isConnected) "packet_ready" else "awaiting_provider"
-        val detail = if (provider.isConnected) {
+        val detail = if (provider.isConnected && provider.billingTier != "free") {
+            "Render request sent to ${provider.displayName}. The finished video is saved to Movies/BhaktiMotionAI on this device."
+        } else if (provider.isConnected) {
             "Free storyboard shot packet compiled & saved. Ready for export or external adapter."
         } else {
             "${provider.displayName} is not connected. Paid billing is disabled; job queued as modular specification only."
@@ -470,7 +472,8 @@ class BhaktiStudioViewModel(
             val res = repository.queueRenderJob(currentUserId, job)
             if (res.isSuccess) {
                 _events.tryEmit(
-                    if (provider.isConnected) "Saved free Production Shot Packet."
+                    if (provider.isConnected && provider.billingTier != "free") "Render request recorded."
+                    else if (provider.isConnected) "Saved free Production Shot Packet."
                     else "Queued modular specification (provider not connected)."
                 )
             } else {

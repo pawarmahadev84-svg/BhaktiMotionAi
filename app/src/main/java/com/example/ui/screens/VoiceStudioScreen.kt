@@ -55,7 +55,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.BuildConfig
 import com.example.core.MediaStorageHelper
+import com.example.core.NarrationExporter
 import com.example.data.model.MovieScene
 import com.example.data.model.SanskritCoachResult
 import com.example.ui.components.GoldAccentDivider
@@ -94,6 +96,7 @@ fun VoiceStudioScreen(
     var uploadedFileLabel by remember { mutableStateOf("") }
     var uploadedFilePath by remember { mutableStateOf("") }
     var isPlayingAudio by remember { mutableStateOf(false) }
+    var isExporting by remember { mutableStateOf(false) }
 
     val selectedScene = scenes.firstOrNull { it.id == selectedSceneId }
 
@@ -399,6 +402,91 @@ fun VoiceStudioScreen(
                         Icon(Icons.Filled.UploadFile, null, tint = RadiantGold, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Select Audio File (MP3 / WAV / M4A)", color = RadiantGold)
+                    }
+
+                    Button(
+                        onClick = {
+                            if (!isExporting) {
+                                scope.launch {
+                                    isExporting = true
+                                    val out = File(context.filesDir, "bhakti_media/audio/narration_${System.currentTimeMillis()}.wav")
+                                    NarrationExporter.exportOnDevice(
+                                        context = context,
+                                        text = narrationInput,
+                                        languageTag = NarrationExporter.languageTagFor(voiceLanguage),
+                                        speechRate = speechRate,
+                                        outFile = out
+                                    ).onSuccess { audio ->
+                                        uploadedFilePath = audio.file.absolutePath
+                                        uploadedFileLabel = "${audio.file.name} (${audio.durationMs / 1000}s)"
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Narration exported. Press Play to review it, then attach it to a scene.",
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    }.onFailure { e ->
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            e.message ?: "Export failed.",
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                    isExporting = false
+                                }
+                            }
+                        },
+                        enabled = !isExporting && narrationInput.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(containerColor = SacredGold),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("export_narration_button")
+                    ) {
+                        Text(
+                            text = if (isExporting) "Exporting…" else "Export Narration as Audio File (free, on-device)",
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+
+                    if (BuildConfig.CLOUD_TTS_API_KEY.isNotBlank()) {
+                        OutlinedButton(
+                            onClick = {
+                                if (!isExporting) {
+                                    scope.launch {
+                                        isExporting = true
+                                        val out = File(context.filesDir, "bhakti_media/audio/narration_cloud_${System.currentTimeMillis()}.mp3")
+                                        NarrationExporter.exportCloud(
+                                            apiKey = BuildConfig.CLOUD_TTS_API_KEY,
+                                            text = narrationInput,
+                                            languageCode = NarrationExporter.languageTagFor(voiceLanguage),
+                                            voiceName = NarrationExporter.DEFAULT_CLOUD_VOICE,
+                                            speakingRate = speechRate,
+                                            outFile = out
+                                        ).onSuccess { audio ->
+                                            uploadedFilePath = audio.file.absolutePath
+                                            uploadedFileLabel = "${audio.file.name} (${audio.durationMs / 1000}s)"
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                "Cloud narration exported. Press Play to review it, then attach it to a scene.",
+                                                android.widget.Toast.LENGTH_LONG
+                                            ).show()
+                                        }.onFailure { e ->
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                e.message ?: "Cloud export failed.",
+                                                android.widget.Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                        isExporting = false
+                                    }
+                                }
+                            },
+                            enabled = !isExporting && narrationInput.isNotBlank(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("export_cloud_narration_button")
+                        ) {
+                            Text("Export with Cloud Voice (paid API)", color = RadiantGold)
+                        }
                     }
 
                     if (uploadedFilePath.isNotBlank() && File(uploadedFilePath).exists()) {
