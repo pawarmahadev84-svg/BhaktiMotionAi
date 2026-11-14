@@ -61,7 +61,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.BuildConfig
 import com.example.core.MediaStorageHelper
+import com.example.core.RenderSaver
+import com.example.data.video.GeminiOmniVideoAdapter
 import com.example.data.model.Cinematic3DPresets
 import com.example.data.model.ModularRenderJob
 import com.example.data.model.MovieScene
@@ -135,6 +138,7 @@ fun VideoStudioScreen(
     var selectedProviderId by remember { mutableStateOf(VideoProviderRegistry.providers.first().id) }
     var selectedCharIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var referenceImagePath by remember { mutableStateOf("") }
+    var isRendering by remember { mutableStateOf(false) }
 
     val selectedProvider = VideoProviderRegistry.providers.first { it.id == selectedProviderId }
     val selectedScene = scenes.firstOrNull { it.id == selectedSceneId }
@@ -581,13 +585,17 @@ fun VideoStudioScreen(
                                     )
                                     ServiceTierBadge(
                                         isFree = provider.billingTier == "free",
-                                        label = if (provider.isConnected) "FREE • READY" else "PAID • NOT CONNECTED"
+                                        label = when {
+                                            provider.billingTier == "free" -> "FREE • READY"
+                                            provider.isConnected -> "PAID • CONNECTED"
+                                            else -> "PAID • NOT CONNECTED"
+                                        }
                                     )
                                 }
                                 Text(
                                     text = provider.modelLabel,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (provider.isConnected) EmeraldFree else AmberPaid
+                                    color = if (provider.billingTier == "free") EmeraldFree else AmberPaid
                                 )
                                 Text(
                                     text = provider.description,
@@ -644,7 +652,43 @@ fun VideoStudioScreen(
                                 charNames,
                                 referenceImagePath
                             )
+                            if (selectedProvider.id == "gemini_omni_adapter" &&
+                                selectedProvider.isConnected &&
+                                enrichedPrompt.isNotBlank() &&
+                                !isRendering
+                            ) {
+                                scope.launch {
+                                    isRendering = true
+                                    val ref = referenceImagePath.takeIf { it.isNotBlank() }?.let { File(it) }
+                                    val out = File(context.filesDir, "bhakti_media/renders/omni_${System.currentTimeMillis()}.mp4")
+                                    val ratio = if (aspectRatio == "9:16") "9:16" else "16:9"
+                                    val result = GeminiOmniVideoAdapter(BuildConfig.GEMINI_API_KEY).generate(
+                                        prompt = "$enrichedPrompt\n\nTarget clip length: about $durationSeconds seconds.",
+                                        aspectRatio = ratio,
+                                        resolution = "720p",
+                                        referenceImage = ref,
+                                        outFile = out
+                                    )
+                                    result.onSuccess { file ->
+                                        val saved = RenderSaver.saveVideoToMovies(context, file, file.name)
+                                        val msg = if (saved != null) {
+                                            "Video saved to Movies/BhaktiMotionAI."
+                                        } else {
+                                            "Video saved in app storage: ${file.absolutePath}"
+                                        }
+                                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                                    }.onFailure { e ->
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            e.message ?: "Video render failed.",
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                    isRendering = false
+                                }
+                            }
                         },
+                        enabled = !isRendering,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
@@ -659,10 +703,12 @@ fun VideoStudioScreen(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = if (selectedProvider.isConnected) {
-                                "Compile Free Shot Packet"
-                            } else {
-                                "Queue Modular Specification"
+                            text = when {
+                                isRendering -> "Rendering… this can take a few minutes"
+                                selectedProvider.id == "gemini_omni_adapter" && selectedProvider.isConnected ->
+                                    "Render Video with Gemini Omni (paid API)"
+                                selectedProvider.isConnected -> "Compile Free Shot Packet"
+                                else -> "Queue Modular Specification"
                             },
                             color = MaterialTheme.colorScheme.onPrimary,
                             fontWeight = FontWeight.Bold
