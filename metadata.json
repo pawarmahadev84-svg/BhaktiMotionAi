@@ -1,0 +1,6 @@
+{
+  "name": "BhaktiMotion AI",
+  "description": "Cinematic mythological and devotional AI movie maker for story-to-scene planning, character continuity, and modular production.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

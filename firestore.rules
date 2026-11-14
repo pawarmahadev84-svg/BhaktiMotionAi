@@ -1,0 +1,191 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidStringList(listVal, maxLen) {
+      return listVal is list &&
+             listVal.size() <= maxLen &&
+             (listVal.size() == 0 || (listVal[0] is string && listVal[0].size() <= 128));
+    }
+
+    function isValidMovieProject(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.storyInput is string && data.storyInput.size() >= 1 && data.storyInput.size() <= 12000 &&
+             data.language is string && data.language in ['hindi', 'sanskrit', 'english', 'bilingual'] &&
+             data.visualStyle is string && data.visualStyle.size() >= 1 && data.visualStyle.size() <= 80 &&
+             data.sceneCount is int && data.sceneCount >= 0 && data.sceneCount <= 50 &&
+             (!('continuitySummary' in data) || (data.continuitySummary is string && data.continuitySummary.size() <= 2000)) &&
+             (!('attachedCharacterIds' in data) || isValidStringList(data.attachedCharacterIds, 20));
+    }
+
+    function isValidMovieScene(data, userId, projectId) {
+      return data.userId is string && data.userId == userId &&
+             data.projectId is string && data.projectId == projectId &&
+             data.sceneNumber is int && data.sceneNumber >= 1 && data.sceneNumber <= 100 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 150 &&
+             data.durationSeconds is int && data.durationSeconds >= 2 && data.durationSeconds <= 60 &&
+             data.sceneDescription is string && data.sceneDescription.size() >= 1 && data.sceneDescription.size() <= 4000 &&
+             data.cameraDirection is string && data.cameraDirection.size() >= 1 && data.cameraDirection.size() <= 1000 &&
+             data.characterActions is string && data.characterActions.size() <= 2000 &&
+             data.continuityNotes is string && data.continuityNotes.size() <= 1500 &&
+             data.narrationScript is string && data.narrationScript.size() <= 3000 &&
+             data.subtitleText is string && data.subtitleText.size() <= 1000 &&
+             data.includedInCut is bool &&
+             (!('sanskritPhonetics' in data) || (data.sanskritPhonetics is string && data.sanskritPhonetics.size() <= 2000)) &&
+             (!('audioFileName' in data) || (data.audioFileName is string && data.audioFileName.size() <= 200)) &&
+             (!('audioLocalUri' in data) || (data.audioLocalUri is string && data.audioLocalUri.size() <= 600)) &&
+             (!('audioDurationMs' in data) || (data.audioDurationMs is int && data.audioDurationMs >= 0 && data.audioDurationMs <= 3600000));
+    }
+
+    function isValidMythCharacter(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.archetype is string && data.archetype.size() >= 1 && data.archetype.size() <= 100 &&
+             data.visualDetails is string && data.visualDetails.size() <= 2500 &&
+             data.costumeDetails is string && data.costumeDetails.size() <= 2500 &&
+             data.auraAndPalette is string && data.auraAndPalette.size() <= 600 &&
+             (!('continuityTags' in data) || isValidStringList(data.continuityTags, 15)) &&
+             (!('localImagePath' in data) || (data.localImagePath is string && data.localImagePath.size() <= 600));
+    }
+
+    function isValidModularRenderJob(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.projectId is string && data.projectId.size() <= 128 &&
+             data.sceneId is string && data.sceneId.size() <= 128 &&
+             data.mode is string && data.mode in ['text_to_video', 'image_to_video'] &&
+             data.providerId is string && data.providerId.size() >= 1 && data.providerId.size() <= 80 &&
+             data.modelName is string && data.modelName.size() >= 1 && data.modelName.size() <= 120 &&
+             data.billingTier is string && data.billingTier in ['free', 'paid'] &&
+             data.prompt is string && data.prompt.size() >= 1 && data.prompt.size() <= 4000 &&
+             data.aspectRatio is string && data.aspectRatio in ['16:9', '9:16'] &&
+             data.durationSeconds is int && data.durationSeconds >= 2 && data.durationSeconds <= 60 &&
+             data.status is string && data.status in ['awaiting_provider', 'packet_ready', 'cancelled'] &&
+             data.statusDetail is string && data.statusDetail.size() <= 600 &&
+             (!('characterNames' in data) || isValidStringList(data.characterNames, 20)) &&
+             (!('referenceImagePath' in data) || (data.referenceImagePath is string && data.referenceImagePath.size() <= 600));
+    }
+
+    match /users/{userId}/projects/{projectId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(projectId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(projectId) &&
+                       incoming().keys().hasAll(['userId', 'title', 'storyInput', 'language', 'visualStyle', 'sceneCount', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'title', 'storyInput', 'language', 'visualStyle', 'continuitySummary', 'attachedCharacterIds', 'sceneCount', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidMovieProject(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(projectId) &&
+                       isValidMovieProject(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'storyInput', 'language', 'visualStyle', 'continuitySummary', 'attachedCharacterIds', 'sceneCount', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(projectId);
+
+      match /scenes/{sceneId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(projectId) && isValidId(sceneId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(projectId) &&
+                         isValidId(sceneId) &&
+                         incoming().keys().hasAll(['userId', 'projectId', 'sceneNumber', 'title', 'durationSeconds', 'sceneDescription', 'cameraDirection', 'characterActions', 'continuityNotes', 'narrationScript', 'subtitleText', 'includedInCut', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'projectId', 'sceneNumber', 'title', 'durationSeconds', 'sceneDescription', 'cameraDirection', 'characterActions', 'continuityNotes', 'narrationScript', 'sanskritPhonetics', 'subtitleText', 'includedInCut', 'audioFileName', 'audioLocalUri', 'audioDurationMs', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidMovieScene(incoming(), userId, projectId) &&
+                         exists(/databases/$(database)/documents/users/$(userId)/projects/$(projectId));
+
+        allow update: if isOwner(userId) &&
+                         isValidId(projectId) &&
+                         isValidId(sceneId) &&
+                         isValidMovieScene(incoming(), userId, projectId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().projectId == existing().projectId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['sceneNumber', 'title', 'durationSeconds', 'sceneDescription', 'cameraDirection', 'characterActions', 'continuityNotes', 'narrationScript', 'sanskritPhonetics', 'subtitleText', 'includedInCut', 'audioFileName', 'audioLocalUri', 'audioDurationMs', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(projectId) && isValidId(sceneId);
+      }
+    }
+
+    match /users/{userId}/characters/{characterId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(characterId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(characterId) &&
+                       incoming().keys().hasAll(['userId', 'name', 'archetype', 'visualDetails', 'costumeDetails', 'auraAndPalette', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'name', 'archetype', 'visualDetails', 'costumeDetails', 'auraAndPalette', 'continuityTags', 'localImagePath', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidMythCharacter(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(characterId) &&
+                       isValidMythCharacter(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'archetype', 'visualDetails', 'costumeDetails', 'auraAndPalette', 'continuityTags', 'localImagePath', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(characterId);
+    }
+
+    match /users/{userId}/renderJobs/{jobId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(jobId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(jobId) &&
+                       incoming().keys().hasAll(['userId', 'projectId', 'sceneId', 'mode', 'providerId', 'modelName', 'billingTier', 'prompt', 'aspectRatio', 'durationSeconds', 'status', 'statusDetail', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'projectId', 'sceneId', 'mode', 'providerId', 'modelName', 'billingTier', 'prompt', 'aspectRatio', 'durationSeconds', 'characterNames', 'referenceImagePath', 'status', 'statusDetail', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidModularRenderJob(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(jobId) &&
+                       isValidModularRenderJob(incoming(), userId) &&
+                       existing().status != 'cancelled' &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['status', 'statusDetail', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(jobId);
+    }
+  }
+}

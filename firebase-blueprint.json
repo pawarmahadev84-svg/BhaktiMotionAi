@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "MovieProject": {
+      "title": "MovieProject",
+      "description": "A mythological or devotional animated film project created by a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "title": { "type": "string", "description": "Project title." },
+        "storyInput": { "type": "string", "description": "Full story or script entered by the user." },
+        "language": {
+          "type": "string",
+          "enum": ["hindi", "sanskrit", "english", "bilingual"],
+          "description": "Primary narration language."
+        },
+        "visualStyle": { "type": "string", "description": "Selected animation aesthetic." },
+        "continuitySummary": { "type": "string", "description": "AI-generated visual continuity bible." },
+        "attachedCharacterIds": { "type": "array", "description": "Selected Character Library document IDs." },
+        "sceneCount": { "type": "integer", "description": "Number of planned scenes." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update." }
+      },
+      "required": ["userId", "title", "storyInput", "language", "visualStyle", "sceneCount", "createdAt", "updatedAt"]
+    },
+    "MovieScene": {
+      "title": "MovieScene",
+      "description": "An individual cinematic scene planned from a MovieProject story.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "projectId": { "type": "string", "description": "Parent MovieProject document ID." },
+        "sceneNumber": { "type": "integer", "description": "Sequential scene order." },
+        "title": { "type": "string", "description": "Scene title." },
+        "durationSeconds": { "type": "integer", "description": "Target duration in seconds." },
+        "sceneDescription": { "type": "string", "description": "Visual and atmospheric description." },
+        "cameraDirection": { "type": "string", "description": "Shot type, lens, movement, and lighting." },
+        "characterActions": { "type": "string", "description": "Character blocking, mudras, and expressions." },
+        "continuityNotes": { "type": "string", "description": "Continuity bridge from previous scene." },
+        "narrationScript": { "type": "string", "description": "Voice-over narration script." },
+        "sanskritPhonetics": { "type": "string", "description": "Optional Sanskrit IAST and syllable stress guide." },
+        "subtitleText": { "type": "string", "description": "Timed subtitle copy for the scene." },
+        "includedInCut": { "type": "boolean", "description": "Whether the scene is included in the Movie Editor cut." },
+        "audioFileName": { "type": "string", "description": "Optional attached local audio filename." },
+        "audioLocalUri": { "type": "string", "description": "Optional app-private audio file path." },
+        "audioDurationMs": { "type": "integer", "description": "Optional attached audio duration in milliseconds." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update." }
+      },
+      "required": ["userId", "projectId", "sceneNumber", "title", "durationSeconds", "sceneDescription", "cameraDirection", "characterActions", "continuityNotes", "narrationScript", "subtitleText", "includedInCut", "createdAt", "updatedAt"]
+    },
+    "MythCharacter": {
+      "title": "MythCharacter",
+      "description": "A reusable mythological character profile in the Character Library.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "name": { "type": "string", "description": "Character name." },
+        "archetype": { "type": "string", "description": "Role or deity archetype." },
+        "visualDetails": { "type": "string", "description": "Facial, posture, and physical details." },
+        "costumeDetails": { "type": "string", "description": "Attire, crown, weapons, and ornaments." },
+        "auraAndPalette": { "type": "string", "description": "Color palette and divine aura cues." },
+        "continuityTags": { "type": "array", "description": "Bounded continuity keywords." },
+        "localImagePath": { "type": "string", "description": "App-private path to character reference image." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update." }
+      },
+      "required": ["userId", "name", "archetype", "visualDetails", "costumeDetails", "auraAndPalette", "createdAt", "updatedAt"]
+    },
+    "ModularRenderJob": {
+      "title": "ModularRenderJob",
+      "description": "A modular video generation job specification prepared for free packet export or future paid provider adapters.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "projectId": { "type": "string", "description": "Optional associated project ID." },
+        "sceneId": { "type": "string", "description": "Optional associated scene ID." },
+        "mode": { "type": "string", "enum": ["text_to_video", "image_to_video"], "description": "Generation mode." },
+        "providerId": { "type": "string", "description": "Modular provider adapter ID." },
+        "modelName": { "type": "string", "description": "Target video model name." },
+        "billingTier": { "type": "string", "enum": ["free", "paid"], "description": "Service billing tier." },
+        "prompt": { "type": "string", "description": "Compiled cinematic video prompt." },
+        "aspectRatio": { "type": "string", "enum": ["16:9", "9:16"], "description": "Target frame aspect ratio." },
+        "durationSeconds": { "type": "integer", "description": "Target clip duration in seconds." },
+        "characterNames": { "type": "array", "description": "Referenced characters." },
+        "referenceImagePath": { "type": "string", "description": "Optional app-private reference image path." },
+        "status": { "type": "string", "enum": ["awaiting_provider", "packet_ready", "cancelled"], "description": "Authentic provider status." },
+        "statusDetail": { "type": "string", "description": "Transparent status explanation." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update." }
+      },
+      "required": ["userId", "projectId", "sceneId", "mode", "providerId", "modelName", "billingTier", "prompt", "aspectRatio", "durationSeconds", "status", "statusDetail", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/MovieProject" },
+      "description": "User-owned mythological movie projects."
+    },
+    "/users/{userId}/projects/{projectId}/scenes/{sceneId}": {
+      "schema": { "$ref": "#/entities/MovieScene" },
+      "description": "Ordered cinematic scenes belonging to a user movie project."
+    },
+    "/users/{userId}/characters/{characterId}": {
+      "schema": { "$ref": "#/entities/MythCharacter" },
+      "description": "Reusable Character Library entries owned by a user."
+    },
+    "/users/{userId}/renderJobs/{jobId}": {
+      "schema": { "$ref": "#/entities/ModularRenderJob" },
+      "description": "Modular video render specifications queued by a user."
+    }
+  }
+}
