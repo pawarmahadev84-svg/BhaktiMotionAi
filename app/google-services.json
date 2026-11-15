@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "856362819511",
+    "project_id": "bhaktimotionai",
+    "storage_bucket": "bhaktimotionai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:856362819511:android:3a6ebcd1680b20bc099232",
+        "android_client_info": {
+          "package_name": "com.aistudio.bhaktimotion.kxrvqm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQ-p6pYGuTh9fiCqkZ0teLNWIdwH0-pRY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
