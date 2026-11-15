@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "856362819511",
+    "project_id": "bhaktimotionai",
+    "storage_bucket": "bhaktimotionai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:856362819511:android:3a6ebcd1680b20bc099232",
+        "android_client_info": {
+          "package_name": "com.aistudio.bhaktimotion.kxrvqm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "856362819511-q25fib6r9suvpo3aok46jh0a2h2m0qse.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.bhaktimotion.kxrvqm",
+            "certificate_hash": "5b8abf93366ff68ec75adf4b3f14dbf2e6c5cef6"
+          }
+        },
+        {
+          "client_id": "856362819511-2mh1gb9clckpc4ijdpjv1q3aqg2a3mjk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQ-p6pYGuTh9fiCqkZ0teLNWIdwH0-pRY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "856362819511-2mh1gb9clckpc4ijdpjv1q3aqg2a3mjk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
